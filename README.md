@@ -50,12 +50,20 @@ pipx upgrade yt-dlp
 
 ### Staying in sync with upstream
 
-This fork tracks upstream `master`. To sync manually from the fork's local clone:
+A [GitHub Actions workflow](.github/workflows/sync-upstream.yml) automatically merges upstream `master` into `main` every Monday at 06:00 UTC. It can also be triggered manually from the Actions tab.
+
+After a sync runs, update your local install:
+
+```bash
+pipx upgrade yt-dlp
+```
+
+To sync manually from a local clone instead:
 
 ```bash
 git fetch upstream
 git merge upstream/master
-git push origin master
+git push origin main
 pipx upgrade yt-dlp
 ```
 
