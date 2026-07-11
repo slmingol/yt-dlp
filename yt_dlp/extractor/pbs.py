@@ -870,4 +870,3 @@ class PBSKidsIE(InfoExtractor):
                 'upload_date': ('video_obj', 'air_date', {unified_strdate}),
             }),
         }
-
