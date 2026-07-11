@@ -13,6 +13,54 @@
 </div>
 <!-- MANPAGE: END EXCLUDED SECTION -->
 
+---
+
+## About this fork
+
+This is a personal fork of [yt-dlp/yt-dlp](https://github.com/yt-dlp/yt-dlp) maintained at [slmingol/yt-dlp](https://github.com/slmingol/yt-dlp). It exists to carry patches that cannot be contributed upstream due to the project's policy on AI-assisted contributions.
+
+### Patches included
+
+| Extractor | Description | Upstream issue |
+|-----------|-------------|----------------|
+| PBS | Fix `KeyError('title')` crash when PBS API omits the title field | [#2606](https://github.com/yt-dlp/yt-dlp/issues/2606) |
+| PBS | Add Next.js RSC fallback: parse encoding URLs from the main page RSC payload when old player subpages return error HTML (post-App Router migration) | [#2606](https://github.com/yt-dlp/yt-dlp/issues/2606) |
+
+### Installation
+
+Install via `pipx` (recommended -- keeps it isolated from system Python):
+
+```bash
+pipx install "yt-dlp @ git+https://github.com/slmingol/yt-dlp.git"
+```
+
+If `yt-dlp` is already installed via Homebrew and shadows the pipx version, unlink it:
+
+```bash
+brew unlink yt-dlp
+```
+
+### Updating
+
+To pull the latest commits from this fork:
+
+```bash
+pipx upgrade yt-dlp
+```
+
+### Staying in sync with upstream
+
+This fork tracks upstream `master`. To sync manually from the fork's local clone:
+
+```bash
+git fetch upstream
+git merge upstream/master
+git push origin master
+pipx upgrade yt-dlp
+```
+
+---
+
 yt-dlp is a feature-rich command-line audio/video downloader with support for [thousands of sites](supportedsites.md). The project is a fork of [youtube-dl](https://github.com/ytdl-org/youtube-dl) based on the now inactive [youtube-dlc](https://github.com/blackjack4494/yt-dlc).
 
 <!-- MANPAGE: MOVE "USAGE AND OPTIONS" SECTION HERE -->
