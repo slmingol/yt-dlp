@@ -1,0 +1,45 @@
+name: Auto release fork
+
+on:
+  workflow_run:
+    workflows: ['Sync upstream']
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Tag and release if upstream version changed
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get current upstream version
+        id: version
+        run: |
+          ver=$(python3 -c "import re; print(re.search(r\"__version__ = '(.+)'\", open('yt_dlp/version.py').read()).group(1))")
+          echo "version=${ver}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${ver}-fork.1" >> "$GITHUB_OUTPUT"
+
+      - name: Check if fork tag already exists for this upstream version
+        id: tag_check
+        run: |
+          if git ls-remote --tags origin "refs/tags/v${{ steps.version.outputs.version }}-fork.*" | grep -q .; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create and push tag
+        if: steps.tag_check.outputs.exists == 'false'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
