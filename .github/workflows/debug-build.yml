@@ -10,8 +10,11 @@ permissions:
 
 jobs:
   build:
-    name: Build wheel + standalone
-    runs-on: ubuntu-latest
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v5
         with:
@@ -26,6 +29,7 @@ jobs:
         run: python -m pip install -U build
 
       - name: Build wheel
+        if: matrix.os == 'ubuntu-latest'
         run: python -m build --wheel --outdir dist/
 
       - name: Build standalone binary
@@ -37,8 +41,9 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: yt-dlp-debug-${{ github.sha }}
+          name: yt-dlp-debug-${{ matrix.os }}-${{ github.sha }}
           path: |
             dist/*.whl
             dist/yt-dlp_linux*
+            dist/yt-dlp_macos*
           retention-days: 14
