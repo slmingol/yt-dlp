@@ -64,6 +64,12 @@ jobs:
           path: release/
           merge-multiple: true
 
+      - name: Add plain-named copies
+        run: |
+          cd release
+          [[ -f yt-dlp_linux ]] && cp yt-dlp_linux yt-dlp_linux_plain || true
+          [[ -f yt-dlp_macos ]] && cp yt-dlp_macos yt-dlp          || true
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
@@ -76,7 +82,13 @@ jobs:
             - [PBS] Fix `KeyError('title')` + Next.js RSC fallback ([upstream #2606](https://github.com/yt-dlp/yt-dlp/issues/2606), [#17638](https://github.com/yt-dlp/yt-dlp/issues/17638))
             - [Odnoklassniki] Fix `TypeError` when metadata already a dict ([upstream #17585](https://github.com/yt-dlp/yt-dlp/issues/17585))
 
-            **Install:**
+            **Install (macOS binary):**
+            ```bash
+            curl -Lo ~/bin/yt-dlp https://github.com/slmingol/yt-dlp/releases/latest/download/yt-dlp
+            chmod +x ~/bin/yt-dlp
+            ```
+
+            **Install (pipx):**
             ```bash
             pipx install "yt-dlp @ git+https://github.com/slmingol/yt-dlp.git"
             ```
