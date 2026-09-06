@@ -1,5 +1,5 @@
 # Fork operations for slmingol/yt-dlp
-# Usage: make -f Fork.mk <target>
+# Usage: make -f Fork.mk [target]
 
 UPSTREAM_REMOTE := upstream
 UPSTREAM_BRANCH := master
@@ -8,93 +8,123 @@ FORK_BRANCH     := main
 DEBUG_BRANCH    := debug
 GH_REPO         := slmingol/yt-dlp
 
-.PHONY: help status sync release debug-push debug-fetch debug-run drop-patch staleness
+# ANSI via printf %b so they work on both macOS and Linux BSD/GNU
+B  := $(shell printf '\033[1m')
+D  := $(shell printf '\033[2m')
+R  := $(shell printf '\033[0m')
+GR := $(shell printf '\033[32m')
+YL := $(shell printf '\033[33m')
+BL := $(shell printf '\033[34m')
+CY := $(shell printf '\033[36m')
+WH := $(shell printf '\033[97m')
+
+.DEFAULT_GOAL := help
+.PHONY: help status sync release debug-push debug-fetch drop-patch staleness
+
+# ── Help ──────────────────────────────────────────────────────────────────────
 
 help:
-	@echo "Fork.mk -- fork ops for $(GH_REPO)"
-	@echo ""
-	@echo "  status        Show fork state: version, patches, tags"
-	@echo "  sync          Rebase fork patches onto upstream/master and push"
-	@echo "  release       Tag and push next fork.N release for current version"
-	@echo "  debug-push    Reset debug branch to main + push (triggers CI build)"
-	@echo "  debug-fetch   Download latest debug CI artifact (macOS)"
-	@echo "  staleness     Check if upstream has touched patched files"
-	@echo "  drop-patch    List fork-only commits for manual review/drop"
+	@printf "\n$(B)$(WH)Fork.mk$(R) $(D)— ops for $(GH_REPO)$(R)\n\n"
+	@printf "  $(B)$(CY)status$(R)       $(D)Version, patches, tags, upstream file activity$(R)\n"
+	@printf "  $(B)$(CY)sync$(R)         $(D)Rebase fork patches onto upstream/master and push$(R)\n"
+	@printf "  $(B)$(CY)release$(R)      $(D)Tag and push next fork.N for current version$(R)\n"
+	@printf "  $(B)$(CY)debug-push$(R)   $(D)Reset debug to main + push (triggers CI)$(R)\n"
+	@printf "  $(B)$(CY)debug-fetch$(R)  $(D)Download latest debug CI artifact for this OS$(R)\n"
+	@printf "  $(B)$(CY)staleness$(R)    $(D)Check upstream activity on patched files$(R)\n"
+	@printf "  $(B)$(CY)drop-patch$(R)   $(D)List fork-only commits + drop instructions$(R)\n\n"
 
 # ── Status ────────────────────────────────────────────────────────────────────
 
 status:
-	@echo "=== Upstream version ==="
-	@python3 -c "import re; print(re.search(r\"__version__ = '(.+)'\", open('yt_dlp/version.py').read()).group(1))"
-	@echo ""
-	@echo "=== Fork patches (commits ahead of upstream) ==="
-	@git log $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH)..HEAD --oneline --no-merges
-	@echo ""
-	@echo "=== Fork release tags ==="
-	@git tag --list 'v*-fork.*' | sort -V | tail -5
-	@echo ""
-	@echo "=== Patched files upstream activity (last 10 upstream commits) ==="
-	@echo "-- pbs.py --"
-	@git log $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH) --oneline -5 -- yt_dlp/extractor/pbs.py
-	@echo "-- odnoklassniki.py --"
-	@git log $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH) --oneline -5 -- yt_dlp/extractor/odnoklassniki.py
+	@printf "\n$(B)$(BL)══ STATUS ────────────────────────────────$(R)\n\n"
+	@printf "$(B)  Upstream version$(R)\n"
+	@printf "  $(GR)$(B)%s$(R)\n\n" "$$(python3 -c "import re; print(re.search(r\"__version__ = '(.+)'\", open('yt_dlp/version.py').read()).group(1))")"
+	@printf "$(B)  Fork patches$(R) $(D)(ahead of upstream)$(R)\n"
+	@git log $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH)..HEAD --no-merges \
+	  --format="  $(YL)%h$(R) %s" --color=never
+	@printf "\n$(B)  Release tags$(R)\n"
+	@git tag --list 'v*-fork.*' | sort -V | tail -5 | sed "s/^/  $(GR)/" | sed "s/$$/$(R)/"
+	@printf "\n$(B)  Upstream activity on patched files$(R)\n"
+	@printf "  $(D)pbs.py$(R)\n"
+	@git log $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH) --no-merges -5 \
+	  --format="    $(D)%h$(R) %s" --color=never -- yt_dlp/extractor/pbs.py
+	@printf "  $(D)odnoklassniki.py$(R)\n"
+	@git log $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH) --no-merges -5 \
+	  --format="    $(D)%h$(R) %s" --color=never -- yt_dlp/extractor/odnoklassniki.py
+	@printf "\n"
 
 # ── Sync ──────────────────────────────────────────────────────────────────────
 
 sync:
-	git fetch $(UPSTREAM_REMOTE) $(UPSTREAM_BRANCH)
-	git checkout $(FORK_BRANCH)
-	git rebase $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH)
-	git push $(FORK_REMOTE) $(FORK_BRANCH) --force-with-lease
+	@printf "\n$(B)$(BL)══ SYNC ────────────────────────────────$(R)\n\n"
+	@printf "$(CY)  Fetching upstream...$(R)\n"
+	@git fetch $(UPSTREAM_REMOTE) $(UPSTREAM_BRANCH)
+	@git checkout $(FORK_BRANCH) -q
+	@printf "$(CY)  Rebasing onto upstream/$(UPSTREAM_BRANCH)...$(R)\n"
+	@git rebase $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH)
+	@git push $(FORK_REMOTE) $(FORK_BRANCH) --force-with-lease -q
+	@printf "$(GR)  ✔ main rebased and pushed$(R)\n\n"
 
 # ── Release ───────────────────────────────────────────────────────────────────
 
 release:
+	@printf "\n$(B)$(BL)══ RELEASE ────────────────────────────────$(R)\n\n"
 	$(eval VER := $(shell python3 -c "import re; print(re.search(r\"__version__ = '(.+)'\", open('yt_dlp/version.py').read()).group(1))"))
 	$(eval N   := $(shell n=1; while git ls-remote --tags $(FORK_REMOTE) "refs/tags/v$(VER)-fork.$$n" | grep -q .; do n=$$((n+1)); done; echo $$n))
 	$(eval TAG := v$(VER)-fork.$(N))
-	@echo "Tagging $(TAG)"
-	git tag "$(TAG)"
-	git push $(FORK_REMOTE) "$(TAG)"
-	@echo "Release workflow triggered: https://github.com/$(GH_REPO)/actions/workflows/release-fork.yml"
+	@printf "$(CY)  Tagging $(B)$(TAG)$(R)\n"
+	@git tag "$(TAG)"
+	@git push $(FORK_REMOTE) "$(TAG)" -q
+	@printf "$(GR)  ✔ $(TAG) pushed$(R)\n"
+	@printf "$(D)  → https://github.com/$(GH_REPO)/actions/workflows/release-fork.yml$(R)\n\n"
 
 # ── Debug branch ──────────────────────────────────────────────────────────────
 
 debug-push:
-	git checkout $(DEBUG_BRANCH)
-	git reset --hard $(FORK_BRANCH)
-	git push $(FORK_REMOTE) $(DEBUG_BRANCH) --force-with-lease
-	git checkout $(FORK_BRANCH)
-	@echo "Debug build triggered: https://github.com/$(GH_REPO)/actions/workflows/debug-build.yml"
+	@printf "\n$(B)$(BL)══ DEBUG PUSH ────────────────────────────────$(R)\n\n"
+	@git checkout $(DEBUG_BRANCH) -q
+	@git reset --hard $(FORK_BRANCH) -q
+	@git push $(FORK_REMOTE) $(DEBUG_BRANCH) --force-with-lease -q
+	@git checkout $(FORK_BRANCH) -q
+	@printf "$(GR)  ✔ debug reset to main and pushed$(R)\n"
+	@printf "$(D)  → https://github.com/$(GH_REPO)/actions/workflows/debug-build.yml$(R)\n\n"
 
 debug-fetch:
+	@printf "\n$(B)$(BL)══ DEBUG FETCH ────────────────────────────────$(R)\n\n"
 	@RUN_ID=$$(gh run list --repo $(GH_REPO) --workflow debug-build.yml --limit 1 --json databaseId -q '.[0].databaseId'); \
 	SHA=$$(gh run view "$$RUN_ID" --repo $(GH_REPO) --json headSha -q '.headSha'); \
 	OS_KEY=$$(uname | tr '[:upper:]' '[:lower:]' | sed 's/darwin/macos/'); \
 	ARTIFACT="yt-dlp-debug-$${OS_KEY}-latest-$${SHA}"; \
 	DEST=~/yt-dlp-debug/"$$ARTIFACT"; \
-	if [[ -d "$$DEST" ]]; then echo "Already downloaded: $$ARTIFACT"; exit 0; fi; \
+	if [[ -d "$$DEST" ]]; then \
+	  printf "$(YL)  already downloaded: %s$(R)\n\n" "$$ARTIFACT"; exit 0; \
+	fi; \
+	printf "$(CY)  Downloading %s...$(R)\n" "$$ARTIFACT"; \
 	gh run download "$$RUN_ID" --repo $(GH_REPO) --dir ~/yt-dlp-debug --name "$$ARTIFACT"; \
-	echo "Downloaded: $$ARTIFACT"
+	printf "$(GR)  ✔ %s$(R)\n\n" "$$DEST"
 
 # ── Staleness ─────────────────────────────────────────────────────────────────
 
 staleness:
+	@printf "\n$(B)$(BL)══ STALENESS CHECK ────────────────────────────────$(R)\n\n"
 	@git fetch $(UPSTREAM_REMOTE) $(UPSTREAM_BRANCH) -q
-	@echo "=== Upstream commits touching pbs.py ==="
-	@git log $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH) --oneline -10 -- yt_dlp/extractor/pbs.py
-	@echo ""
-	@echo "=== Upstream commits touching odnoklassniki.py ==="
-	@git log $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH) --oneline -10 -- yt_dlp/extractor/odnoklassniki.py
+	@printf "  $(B)pbs.py$(R)\n"
+	@git log $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH) --no-merges -10 \
+	  --format="    $(D)%h$(R) %s" --color=never -- yt_dlp/extractor/pbs.py
+	@printf "\n  $(B)odnoklassniki.py$(R)\n"
+	@git log $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH) --no-merges -10 \
+	  --format="    $(D)%h$(R) %s" --color=never -- yt_dlp/extractor/odnoklassniki.py
+	@printf "\n"
 
 # ── Patch management ──────────────────────────────────────────────────────────
 
 drop-patch:
-	@echo "Fork-only commits (candidates to drop when upstream fixes the bug):"
-	@git log $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH)..HEAD --oneline --no-merges
-	@echo ""
-	@echo "To drop a patch:"
-	@echo "  git rebase -i $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH)"
-	@echo "  # mark the commit 'drop', save"
-	@echo "  git push $(FORK_REMOTE) $(FORK_BRANCH) --force-with-lease"
-	@echo "  make -f Fork.mk release"
+	@printf "\n$(B)$(BL)══ DROP PATCH ────────────────────────────────$(R)\n\n"
+	@printf "$(B)  Fork-only commits$(R) $(D)(candidates to drop)$(R)\n"
+	@git log $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH)..HEAD --no-merges \
+	  --format="  $(YL)%h$(R) %s" --color=never
+	@printf "\n$(B)  To drop a patch:$(R)\n"
+	@printf "  $(D)git rebase -i $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH)$(R)\n"
+	@printf "  $(D)# mark the commit 'drop', save$(R)\n"
+	@printf "  $(D)git push $(FORK_REMOTE) $(FORK_BRANCH) --force-with-lease$(R)\n"
+	@printf "  $(D)make -f Fork.mk release$(R)\n\n"
