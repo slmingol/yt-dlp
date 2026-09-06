@@ -31,7 +31,15 @@ This is a personal fork of [yt-dlp/yt-dlp](https://github.com/yt-dlp/yt-dlp) mai
 
 ### Installation
 
-Install via `pipx` (recommended -- keeps it isolated from system Python):
+**Option 1 -- latest release binary** (no Python required):
+
+```bash
+# macOS (Apple Silicon)
+curl -Lo ~/bin/yt-dlp https://github.com/slmingol/yt-dlp/releases/latest/download/yt-dlp_macos
+chmod +x ~/bin/yt-dlp
+```
+
+**Option 2 -- pipx** (keeps it isolated from system Python):
 
 ```bash
 pipx install "yt-dlp @ git+https://github.com/slmingol/yt-dlp.git"
@@ -45,7 +53,9 @@ brew unlink yt-dlp
 
 ### Updating
 
-To pull the latest commits from this fork:
+**Binary**: re-run the `curl` install command above.
+
+**pipx**:
 
 ```bash
 pipx upgrade yt-dlp
@@ -109,6 +119,32 @@ The `debug` branch is a scratch branch for merging multiple PRs together to test
    ```
 
 > **Note**: never merge `debug` into `main` -- it is a throwaway integration branch. Reset it to `main` at the start of each test cycle.
+
+### Patch lifecycle
+
+Each patch in this fork should be dropped as soon as upstream ships an equivalent fix, to avoid rebase conflicts on the next sync.
+
+**To check if a patch is still needed:**
+```bash
+git log upstream/master --oneline | grep -i "odnoklassniki\|pbs"
+```
+
+**To drop a patch once upstream has fixed it:**
+```bash
+# Rebase interactively, drop the commit
+git rebase -i upstream/master
+# Remove the line for the obsolete patch, save, push
+git push origin main --force-with-lease
+git tag v<upstream-version>-fork.<n> && git push origin <tag>
+```
+
+**Current patch status:**
+
+| Patch | Upstream tracking | Status |
+|-------|-------------------|--------|
+| PBS `KeyError('title')` | [#2606](https://github.com/yt-dlp/yt-dlp/issues/2606) | Open -- keep |
+| PBS Next.js RSC fallback | [#17638](https://github.com/yt-dlp/yt-dlp/issues/17638) | Open -- keep |
+| Odnoklassniki metadata dict | [#17585](https://github.com/yt-dlp/yt-dlp/issues/17585) / [PR #17600](https://github.com/yt-dlp/yt-dlp/pull/17600) | PR open -- drop when merged |
 
 ---
 
