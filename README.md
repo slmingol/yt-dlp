@@ -50,7 +50,7 @@ pipx upgrade yt-dlp
 
 ### Staying in sync with upstream
 
-A [GitHub Actions workflow](.github/workflows/sync-upstream.yml) automatically merges upstream `master` into `main` every Monday at 06:00 UTC. It can also be triggered manually from the Actions tab.
+A [GitHub Actions workflow](.github/workflows/sync-upstream.yml) automatically merges upstream `master` into `main` daily at 06:00 UTC. It can also be triggered manually from the Actions tab.
 
 After a sync runs, update your local install:
 
@@ -66,6 +66,46 @@ git merge upstream/master
 git push origin main
 pipx upgrade yt-dlp
 ```
+
+### Testing patches with the debug branch
+
+The `debug` branch is a scratch branch for merging multiple PRs together to test locally before they land in `main` or upstream. A [CI workflow](.github/workflows/debug-build.yml) runs on every push/merge to `debug` and produces two artifacts (retained 14 days):
+
+- `*.whl` -- pip-installable wheel
+- `yt-dlp_linux_x86_64` -- standalone binary, no Python required
+
+**Workflow:**
+
+1. Start fresh from `main` (or upstream) each test cycle:
+   ```bash
+   git checkout debug
+   git reset --hard main
+   ```
+
+2. Merge the PRs/branches you want to test:
+   ```bash
+   git merge fix/pbs-nextjs-rsc-fallback
+   git merge some-other-branch
+   ```
+
+3. Push to trigger the build:
+   ```bash
+   git push origin debug --force-with-lease
+   ```
+
+4. Download artifacts from the [Actions tab](https://github.com/slmingol/yt-dlp/actions/workflows/debug-build.yml) once the run completes.
+
+5. Install the wheel, or run the binary directly:
+   ```bash
+   # wheel (into an isolated env)
+   pipx install ./yt_dlp-*.whl --force
+
+   # or run the binary directly
+   chmod +x yt-dlp_linux_x86_64
+   ./yt-dlp_linux_x86_64 <url>
+   ```
+
+> **Note**: never merge `debug` into `main` -- it is a throwaway integration branch. Reset it to `main` at the start of each test cycle.
 
 ---
 
