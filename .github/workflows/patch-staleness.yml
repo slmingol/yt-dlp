@@ -1,0 +1,81 @@
+name: Patch staleness check
+
+on:
+  workflow_run:
+    workflows: ['Sync upstream']
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    name: Check if fork patches are still needed
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Add upstream remote
+        run: git remote add upstream https://github.com/yt-dlp/yt-dlp.git && git fetch upstream master
+
+      - name: Check patched files for upstream changes
+        id: check
+        run: |
+          # Get the date of our oldest fork-specific patch on each file
+          PBS_PATCH_DATE=$(git log upstream/master..HEAD --diff-filter=M --follow --format="%ai" -- yt_dlp/extractor/pbs.py | tail -1)
+          OKRU_PATCH_DATE=$(git log upstream/master..HEAD --diff-filter=M --follow --format="%ai" -- yt_dlp/extractor/odnoklassniki.py | tail -1)
+
+          # Check if upstream has touched those files since our patch
+          PBS_UPSTREAM=$(git log upstream/master --oneline --after="${PBS_PATCH_DATE:-1970-01-01}" -- yt_dlp/extractor/pbs.py 2>/dev/null | head -5)
+          OKRU_UPSTREAM=$(git log upstream/master --oneline --after="${OKRU_PATCH_DATE:-1970-01-01}" -- yt_dlp/extractor/odnoklassniki.py 2>/dev/null | head -5)
+
+          STALE=""
+          BODY=""
+
+          if [[ -n "$PBS_UPSTREAM" ]]; then
+            STALE="true"
+            BODY="${BODY}### PBS extractor patched upstream\n\n\`\`\`\n${PBS_UPSTREAM}\n\`\`\`\n\nReview: do our PBS patches still apply cleanly? If upstream fixed the same bugs, drop the patch.\n\n"
+          fi
+
+          if [[ -n "$OKRU_UPSTREAM" ]]; then
+            STALE="true"
+            BODY="${BODY}### Odnoklassniki extractor patched upstream\n\n\`\`\`\n${OKRU_UPSTREAM}\n\`\`\`\n\nReview: do our ok.ru patches still apply cleanly? PR #17600 may have merged.\n\n"
+          fi
+
+          echo "stale=${STALE}" >> "$GITHUB_OUTPUT"
+          {
+            echo 'body<<EOF'
+            printf '%b' "$BODY"
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Open issue if patches may be stale
+        if: steps.check.outputs.stale == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = 'Fork patch staleness: upstream touched patched files';
+            const body = `${{ steps.check.outputs.body }}`;
+
+            // Check for existing open issue with same title to avoid duplicates
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'patch-staleness',
+            });
+            const existing = issues.data.find(i => i.title === title);
+            if (!existing) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['patch-staleness'],
+              });
+            }
