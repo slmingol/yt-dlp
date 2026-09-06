@@ -1,0 +1,44 @@
+name: Debug Build
+
+on:
+  push:
+    branches: ['debug']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build wheel + standalone
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build deps
+        run: python -m pip install -U build
+
+      - name: Build wheel
+        run: python -m build --wheel --outdir dist/
+
+      - name: Build standalone binary
+        run: |
+          python -m pip install -U pyinstaller
+          python -m pip install -e ".[default]"
+          python -m bundle.pyinstaller
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: yt-dlp-debug-${{ github.sha }}
+          path: |
+            dist/*.whl
+            dist/yt-dlp_linux*
+          retention-days: 14
