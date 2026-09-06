@@ -60,8 +60,15 @@ sync:
 	@printf "$(CY)  Fetching upstream...$(R)\n"
 	@git fetch $(UPSTREAM_REMOTE) $(UPSTREAM_BRANCH)
 	@git checkout $(FORK_BRANCH) -q
-	@printf "$(CY)  Rebasing onto upstream/$(UPSTREAM_BRANCH)...$(R)\n"
-	@git rebase $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH)
+	@if ! git diff --quiet || ! git diff --cached --quiet; then \
+	  printf "$(YL)  Stashing uncommitted changes...$(R)\n"; \
+	  git stash push -u -m "fork-sync-stash"; \
+	  git rebase $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH); \
+	  git stash pop; \
+	  printf "$(YL)  ✔ stash restored$(R)\n"; \
+	else \
+	  git rebase $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH); \
+	fi
 	@git push $(FORK_REMOTE) $(FORK_BRANCH) --force-with-lease -q
 	@printf "$(GR)  ✔ main rebased and pushed$(R)\n\n"
 
