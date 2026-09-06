@@ -25,21 +25,32 @@ jobs:
         run: |
           ver=$(python3 -c "import re; print(re.search(r\"__version__ = '(.+)'\", open('yt_dlp/version.py').read()).group(1))")
           echo "version=${ver}" >> "$GITHUB_OUTPUT"
-          echo "tag=v${ver}-fork.1" >> "$GITHUB_OUTPUT"
 
-      - name: Check if fork tag already exists for this upstream version
-        id: tag_check
+      - name: Find next available fork.N tag
+        id: tag
         run: |
-          if git ls-remote --tags origin "refs/tags/v${{ steps.version.outputs.version }}-fork.*" | grep -q .; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
+          ver="${{ steps.version.outputs.version }}"
+          n=1
+          while git ls-remote --tags origin "refs/tags/v${ver}-fork.${n}" | grep -q .; do
+            n=$((n + 1))
+          done
+          echo "tag=v${ver}-fork.${n}" >> "$GITHUB_OUTPUT"
+          echo "is_first=${n == 1 && true || false}" >> "$GITHUB_OUTPUT"
+
+      - name: Skip if fork.1 already exists (no new upstream version)
+        id: should_release
+        run: |
+          ver="${{ steps.version.outputs.version }}"
+          if git ls-remote --tags origin "refs/tags/v${ver}-fork.1" | grep -q .; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
           else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Create and push tag
-        if: steps.tag_check.outputs.exists == 'false'
+        if: steps.should_release.outputs.skip == 'false'
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "${{ steps.version.outputs.tag }}"
-          git push origin "${{ steps.version.outputs.tag }}"
+          git tag "${{ steps.tag.outputs.tag }}"
+          git push origin "${{ steps.tag.outputs.tag }}"
