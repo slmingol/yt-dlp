@@ -76,7 +76,7 @@ The `debug` branch is a scratch branch for merging multiple PRs together to test
 
 **Workflow:**
 
-1. Start fresh from `main` (or upstream) each test cycle:
+1. Start fresh from `main` each test cycle:
    ```bash
    git checkout debug
    git reset --hard main
