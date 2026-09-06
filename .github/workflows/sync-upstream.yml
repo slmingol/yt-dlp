@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   sync:
-    name: Merge upstream/master into main
+    name: Rebase fork patches onto upstream/master
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -25,11 +25,11 @@ jobs:
       - name: Fetch upstream
         run: git fetch upstream master
 
-      - name: Merge upstream/master
+      - name: Rebase onto upstream/master
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git merge upstream/master --no-edit
+          git rebase upstream/master
 
       - name: Push
-        run: git push origin main
+        run: git push origin main --force-with-lease
