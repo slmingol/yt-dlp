@@ -107,7 +107,8 @@ debug-fetch:
 	  printf "$(YL)  already downloaded: %s$(R)\n\n" "$$ARTIFACT"; exit 0; \
 	fi; \
 	printf "$(CY)  Downloading %s...$(R)\n" "$$ARTIFACT"; \
-	gh run download "$$RUN_ID" --repo $(GH_REPO) --dir ~/yt-dlp-debug --name "$$ARTIFACT"; \
+	mkdir -p "$$DEST"; \
+	gh run download "$$RUN_ID" --repo $(GH_REPO) --dir "$$DEST" --name "$$ARTIFACT"; \
 	printf "$(GR)  ✔ %s$(R)\n\n" "$$DEST"
 
 # ── Staleness ─────────────────────────────────────────────────────────────────
