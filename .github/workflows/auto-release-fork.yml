@@ -35,7 +35,6 @@ jobs:
             n=$((n + 1))
           done
           echo "tag=v${ver}-fork.${n}" >> "$GITHUB_OUTPUT"
-          echo "is_first=${n == 1 && true || false}" >> "$GITHUB_OUTPUT"
 
       - name: Skip if fork.1 already exists (no new upstream version)
         id: should_release
