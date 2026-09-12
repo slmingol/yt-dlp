@@ -57,10 +57,12 @@ jobs:
       - name: Open issue if patches may be stale
         if: steps.check.outputs.stale == 'true'
         uses: actions/github-script@v7
+        env:
+          ISSUE_BODY: ${{ steps.check.outputs.body }}
         with:
           script: |
             const title = 'Fork patch staleness: upstream touched patched files';
-            const body = `${{ steps.check.outputs.body }}`;
+            const body = process.env.ISSUE_BODY;
 
             // Check for existing open issue with same title to avoid duplicates
             const issues = await github.rest.issues.listForRepo({
