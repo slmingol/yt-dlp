@@ -48,9 +48,6 @@ status:
 	@printf "  $(D)pbs.py$(R)\n"
 	@git log $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH) --no-merges -5 \
 	  --format="    $(D)%h$(R) %s" --color=never -- yt_dlp/extractor/pbs.py
-	@printf "  $(D)odnoklassniki.py$(R)\n"
-	@git log $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH) --no-merges -5 \
-	  --format="    $(D)%h$(R) %s" --color=never -- yt_dlp/extractor/odnoklassniki.py
 	@printf "\n"
 
 # ── Sync ──────────────────────────────────────────────────────────────────────
@@ -119,9 +116,6 @@ staleness:
 	@printf "  $(B)pbs.py$(R)\n"
 	@git log $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH) --no-merges -10 \
 	  --format="    $(D)%h$(R) %s" --color=never -- yt_dlp/extractor/pbs.py
-	@printf "\n  $(B)odnoklassniki.py$(R)\n"
-	@git log $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH) --no-merges -10 \
-	  --format="    $(D)%h$(R) %s" --color=never -- yt_dlp/extractor/odnoklassniki.py
 	@printf "\n"
 
 # ── Patch management ──────────────────────────────────────────────────────────
