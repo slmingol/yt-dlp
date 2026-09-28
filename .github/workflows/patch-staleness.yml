@@ -28,11 +28,9 @@ jobs:
         run: |
           # Get the date of our oldest fork-specific patch on each file
           PBS_PATCH_DATE=$(git log upstream/master..HEAD --diff-filter=M --follow --format="%ai" -- yt_dlp/extractor/pbs.py | tail -1)
-          OKRU_PATCH_DATE=$(git log upstream/master..HEAD --diff-filter=M --follow --format="%ai" -- yt_dlp/extractor/odnoklassniki.py | tail -1)
 
           # Check if upstream has touched those files since our patch
           PBS_UPSTREAM=$(git log upstream/master --oneline --after="${PBS_PATCH_DATE:-1970-01-01}" -- yt_dlp/extractor/pbs.py 2>/dev/null | head -5)
-          OKRU_UPSTREAM=$(git log upstream/master --oneline --after="${OKRU_PATCH_DATE:-1970-01-01}" -- yt_dlp/extractor/odnoklassniki.py 2>/dev/null | head -5)
 
           STALE=""
           BODY=""
@@ -40,11 +38,6 @@ jobs:
           if [[ -n "$PBS_UPSTREAM" ]]; then
             STALE="true"
             BODY="${BODY}### PBS extractor patched upstream\n\n\`\`\`\n${PBS_UPSTREAM}\n\`\`\`\n\nReview: do our PBS patches still apply cleanly? If upstream fixed the same bugs, drop the patch.\n\n"
-          fi
-
-          if [[ -n "$OKRU_UPSTREAM" ]]; then
-            STALE="true"
-            BODY="${BODY}### Odnoklassniki extractor patched upstream\n\n\`\`\`\n${OKRU_UPSTREAM}\n\`\`\`\n\nReview: do our ok.ru patches still apply cleanly? PR #17600 may have merged.\n\n"
           fi
 
           echo "stale=${STALE}" >> "$GITHUB_OUTPUT"
