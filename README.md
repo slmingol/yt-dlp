@@ -27,7 +27,6 @@ This is a personal fork of [yt-dlp/yt-dlp](https://github.com/yt-dlp/yt-dlp) mai
 |-----------|-------------|----------------|
 | PBS | Fix `KeyError('title')` crash when PBS API omits the title field | [#2606](https://github.com/yt-dlp/yt-dlp/issues/2606) |
 | PBS | Add Next.js RSC fallback: parse encoding URLs from the main page RSC payload when old player subpages return error HTML (post-App Router migration) | [#17638](https://github.com/yt-dlp/yt-dlp/issues/17638) |
-| Odnoklassniki | Fix `TypeError` when `flashvars['metadata']` is already a dict (ok.ru page format change) | [#17585](https://github.com/yt-dlp/yt-dlp/issues/17585) |
 
 ### Installation
 
