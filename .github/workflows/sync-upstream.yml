@@ -8,7 +8,6 @@ on:
 permissions:
   contents: write
   issues: write
-  workflows: write
 
 jobs:
   sync:
@@ -19,7 +18,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Add upstream remote
         run: git remote add upstream https://github.com/yt-dlp/yt-dlp.git
@@ -34,7 +33,11 @@ jobs:
           git rebase upstream/master
 
       - name: Push
-        run: git push origin main --force-with-lease
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/slmingol/yt-dlp.git"
+          git push origin main --force-with-lease
 
       - name: Open issue on failure
         if: failure()
