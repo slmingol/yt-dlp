@@ -143,7 +143,7 @@ git tag v<upstream-version>-fork.<n> && git push origin <tag>
 |-------|-------------------|--------|
 | PBS `KeyError('title')` | [#2606](https://github.com/yt-dlp/yt-dlp/issues/2606) | Open -- keep |
 | PBS Next.js RSC fallback | [#17638](https://github.com/yt-dlp/yt-dlp/issues/17638) | Open -- keep |
-| Odnoklassniki metadata dict | [#17585](https://github.com/yt-dlp/yt-dlp/issues/17585) / [PR #17600](https://github.com/yt-dlp/yt-dlp/pull/17600) | PR open -- drop when merged |
+| Odnoklassniki metadata dict | [#17585](https://github.com/yt-dlp/yt-dlp/issues/17585) / [PR #17739](https://github.com/yt-dlp/yt-dlp/pull/17739) | Dropped -- upstream fixed in #17739 |
 
 ---
 
